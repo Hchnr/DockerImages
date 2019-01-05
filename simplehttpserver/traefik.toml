@@ -1,0 +1,56 @@
+################################################################
+# Global configuration
+################################################################
+
+# Enable debug mode
+# Default: false
+debug = false
+
+# Log level
+# Default: "ERROR"
+logLevel = "ERROR"
+AllowMinWeightZero = true
+
+[traefikLog]
+  filePath = "logs/traefik.log"
+  format   = "json"
+
+[accessLog]
+  filePath = "logs/access.log"
+  format = "json"
+
+################################################################
+# Entrypoints configuration
+################################################################
+
+defaultEntryPoints = ["http"]
+[entryPoints]
+  [entryPoints.http]
+  address = ":80"
+  [entryPoints.traefik]
+  address = ":8080"
+
+[file]
+[frontends]
+  [frontends.consul]
+  backend = "consul"
+  passHostHeader = true
+    [frontends.consul.routes.rules1]
+    rule = "Host:consul.shannonai.local"
+
+[backends]
+  [backends.consul]
+    [backends.consul.servers.server1]
+    weight = 1
+    url = "http://192.168.33.10:8500"
+
+[consulCatalog]
+endpoint = "localhost:8500"
+exposedByDefault = false
+domain = "shannonai.local"
+frontEndRule = "Host:{{getTag \"SubDomain\" .Attributes .ServiceName}}.{{.Domain}};PathPrefix:{{getTag \"PathPrefix\" .Attributes \"/\"}}"
+prefix = "traefik"
+
+[api]
+  entryPoint = "traefik"
+  dashboard = true
