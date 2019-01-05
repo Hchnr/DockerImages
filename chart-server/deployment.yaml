@@ -1,0 +1,95 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: chart-server
+  namespace: monitoring
+spec:
+  selector:
+    app: chart-repo
+  ports:
+    - protocol: TCP
+      targetPort: 9421
+      port: 9421
+      name: http
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: chart-server
+  namespace: monitoring
+  annotations:
+    kubernetes.io/ingress.class: traefik
+spec:
+  rules:
+  - host: chart.shannonai.com
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: chart-server
+          servicePort: 9421
+---
+kind: Deployment
+apiVersion: extensions/v1beta1
+metadata:
+  name: chart-server
+  namespace: monitoring
+  annotations:
+      kubernetes.io/change-cause: "initial deployment"
+  labels:
+    app: chart-repo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: chart-repo
+  template:
+    metadata:
+      labels:
+        app: chart-repo
+    spec:
+      terminationGracePeriodSeconds: 60
+      imagePullSecrets:
+      - name: aliyun-shannon
+      volumes:
+      - name: ssh
+        secret:
+          secretName: ssh-key-shannon
+          defaultMode: 0400
+      containers:
+      - name: chart-server
+        image: registry.cn-beijing.aliyuncs.com/shannonai/chart-server:v1.0.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: http
+          containerPort: 9421
+        volumeMounts:
+        - mountPath: /root/.ssh
+          name: ssh
+        resources:
+          requests:
+            cpu: 1
+            memory: 1Gi
+          limits:
+            cpu: 8
+            memory: 4Gi
+        livenessProbe:
+          httpGet:
+            port: 9421
+            path: /health
+          initialDelaySeconds: 30 ## equals to the maximum startup time of the application + couple of seconds
+          periodSeconds: 15
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 5
+        readinessProbe: #kubernetes认为该pod是启动成功的
+          httpGet:
+            port: 9421
+            path: /health
+          initialDelaySeconds: 30 ## equals to minimum startup time of the application
+          periodSeconds: 15
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 5
+
+
