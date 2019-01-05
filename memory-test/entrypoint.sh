@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
 case "$1" in
-  simplehttpserver)
-    exec ./simplehttpserver
+  parent)
+    exec "./parent.sh"
     ;;
   *)
     # The command is something like bash, not an airflow subcommand. Just run it in the right environment.

@@ -1,12 +1,14 @@
 FROM registry.cn-beijing.aliyuncs.com/shannonai/debian
-LABEL maintainer="taoshibo@shannonai.com"
+LABEL maintainer="hechenrui123@gmail.com"
 
 WORKDIR /root
 COPY entrypoint.sh entrypoint.sh
-COPY ./simplehttpserver simplehttpserver
-RUN chmod u+x simplehttpserver && chmod u+x entrypoint.sh
+COPY parent.sh parent.sh
+COPY child.sh child.sh
+COPY ./memory-test memory-test
+RUN chmod u+x memory-test && chmod u+x entrypoint.sh && chmod u+x parent.sh
 
 EXPOSE 80
 
 ENTRYPOINT ["./entrypoint.sh"]
-CMD ["simplehttpserver"] # set default arg for entrypoint
+CMD ["parent"] # set default arg for entrypoint
