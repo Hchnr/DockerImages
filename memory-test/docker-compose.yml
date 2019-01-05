@@ -1,0 +1,63 @@
+version: '3'
+services:
+    consul_server:
+        image: consul:1.2.1
+        container_name: consul
+        restart: always
+        network_mode: host
+        environment:
+            - SERVICE_8500_NAME=consul
+            - SERVICE_8500_TAGS=traefik.enable=true
+        ports:
+            - "8300"
+            - "8301"
+            - "8302"
+            - "8500"
+            - "8600"
+        volumes:
+            - /var/run/docker.sock:/var/run/docker.sock
+        command: "agent -server -ui -bind=192.168.33.10 -client=0.0.0.0 -bootstrap-expect=1 -enable-script-checks=true -disable-host-node-id=true"
+
+    registrator:
+        image: gliderlabs/registrator:v7
+        container_name: registrator
+        restart: always
+        network_mode: host
+        volumes:
+            - /var/run/docker.sock:/tmp/docker.sock
+        command: "-ip 192.168.33.10 consul://192.168.33.10:8500"
+
+    simplehttpserver:
+        image: simplehttpserver
+        restart: always
+        environment:
+            # 环境变量=后面一定不要有空格
+            - SERVICE_80_NAME=simplehttpserver
+            - SERVICE_80_TAGS=traefik.enable=true,SubDomain=simplehttpserver
+        ports:
+            - "80"
+        deploy:
+            resources:
+                limits:
+                    cpus: '0.05'
+                    memory: 50M
+                reservations:
+                    cpus: '0.05'
+                    memory: 20M
+
+    traefik:
+        image: shannon/traefik
+        container_name: traefik
+        network_mode: host
+        restart: always
+        environment:
+            - SERVICE_80_NAME=traefik
+            - SERVICE_8080_NAME=traefik
+            - SERVICE_8080_TAGS=traefik.enable=true
+        ports:
+            - "80"
+            - "8080"
+        volumes:
+            - /var/run/docker.sock:/var/run/docker.sock
+            - ./logs:/root/logs
+            - ./traefik.toml:/root/traefik.toml
